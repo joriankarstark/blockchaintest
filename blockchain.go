@@ -8,9 +8,10 @@ import (
 
 const blocksBucket = "blocksBucket"
 
+//Blockchain type.  Consists of a pointer to a db and a tip.  The tip is the top of the chain
 type Blockchain struct {
 	tip []byte
-	db  *bolt.DB
+	Db  *bolt.DB
 }
 
 type BlockchainIterator struct {
@@ -19,7 +20,7 @@ type BlockchainIterator struct {
 }
 
 func (blockchain *Blockchain) Iterator() *BlockchainIterator {
-	blockchainIterator := &BlockchainIterator{blockchain.tip, blockchain.db}
+	blockchainIterator := &BlockchainIterator{blockchain.tip, blockchain.Db}
 	return blockchainIterator
 }
 
@@ -44,7 +45,7 @@ func (blockchainIterator *BlockchainIterator) Next() *Block {
 func (blockchain *Blockchain) AddBlock(data string) {
 	var lastHash []byte
 
-	err := blockchain.db.View(func(tx *bolt.Tx) error {
+	err := blockchain.Db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(blocksBucket))
 		lastHash = bucket.Get([]byte("1"))
 
@@ -53,7 +54,7 @@ func (blockchain *Blockchain) AddBlock(data string) {
 
 	newBlock := NewBlock(data, lastHash)
 
-	err = blockchain.db.Update(func(tx *bolt.Tx) error {
+	err = blockchain.Db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(blocksBucket))
 		err := bucket.Put(newBlock.Hash, newBlock.Serialize())
 		err = bucket.Put([]byte("1"), newBlock.Hash)
@@ -70,6 +71,7 @@ func (blockchain *Blockchain) AddBlock(data string) {
 	}
 }
 
+//Creates a new blockchain and adds the genesis block
 func NewBlockChain() *Blockchain {
 	var tip []byte
 	db, err := bolt.Open("dbFile", 0600, nil)
