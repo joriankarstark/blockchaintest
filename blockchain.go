@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -112,7 +113,7 @@ func NewBlockChain(address string) *Blockchain {
 
 }
 
-func CreateBlockChain(address string) *Blockchain {
+func CreateBlockchain(address string) *Blockchain {
 	if dbExists() {
 		fmt.Println("Blockchain already exists.")
 		os.Exit(1)
@@ -148,4 +149,41 @@ func CreateBlockChain(address string) *Blockchain {
 	}
 
 	return &Blockchain{tip, db}
+}
+
+func (bc *Blockchain) FindUnspentTransactions(address string) []Transaction {
+	var unspentTransactions []Transaction
+	spentTransactions := make(map[string][]int)
+	blockchainIterator := bc.Iterator()
+
+	for {
+		block := blockchainIterator.Next()
+
+		for _, transaction := range block.Transactions {
+			transactionID := hex.EncodeToString(transaction.ID)
+
+		Outputs:
+			for outID, out := range transaction.TransactionOutput {
+				//was the output spent
+				if spentTransactions[transactionID] != nil {
+					for _, spentOut := range spentTransactions[transactionID] {
+						if spentOut == outID {
+							continue Outputs
+						}
+					}
+				}
+			}
+
+			if transaction.IsCoinbase() == false {
+				for _, in := range transaction.Input {
+					if in.CanUnlockOutputWith(address) {
+						inTransactionID := hex.EncodeToString(in.TransactionId)
+
+					}
+				}
+			}
+
+		}
+	}
+
 }
